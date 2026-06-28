@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holiday Bells 3D — Play & Swing</title>
+  <meta name="description" content="An interactive 3D holiday bells simulator built with Three.js. Play 'We Wish You A Merry Christmas' and watch the winter wonder unfold.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Three.js and Addons Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Canvas for Three.js -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Debug Overlay for Console Diagnostics -->
+  <div id="debug-console" style="position: fixed; bottom: 20px; right: 20px; width: 380px; max-height: 250px; overflow-y: auto; background: rgba(15, 23, 42, 0.92); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px; font-family: monospace; font-size: 11px; z-index: 99999; pointer-events: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
+    <div style="font-weight: bold; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 6px; margin-bottom: 8px; color: #38bdf8; display: flex; justify-content: space-between;">
+      <span>💻 Diagnostic Console Logs:</span>
+      <button onclick="document.getElementById('debug-console').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 12px;">✕</button>
+    </div>
+    <div id="debug-log-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+  </div>
+
+  <script>
+    const logList = document.getElementById('debug-log-list');
+    
+    function appendLog(text, color = '#e2e8f0') {
+      const item = document.createElement('div');
+      item.style.color = color;
+      item.style.wordBreak = 'break-all';
+      item.textContent = text;
+      logList.appendChild(item);
+      // Auto scroll to bottom
+      logList.parentElement.scrollTop = logList.parentElement.scrollHeight;
+    }
+
+    window.onerror = function(message, source, lineno, colno, error) {
+      appendLog(`Error: ${message} (${source ? source.split('/').pop() : 'unknown'}:${lineno || 0})`, '#f87171');
+    };
+    
+    // Hook console logs
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), '#38bdf8');
+    };
+
+    // Hook console warnings
+    const originalWarn = console.warn;
+    console.warn = function(...args) {
+      originalWarn.apply(console, args);
+      appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), '#fbbf24');
+    };
+
+    // Hook console errors
+    const originalError = console.error;
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '), '#f87171');
+    };
+  </script>
+
+  <!-- Loader Overlay -->
+  <div id="loader-overlay" class="overlay">
+    <div class="loader-card">
+      <div class="loader-title">Holiday Bells 3D</div>
+      <div class="loader-subtitle">Loading winter magic...</div>
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+      <div id="loader-status" class="loader-status">Initializing scene...</div>
+      <button id="start-btn" class="btn" style="display: none;">Enter Experience</button>
+    </div>
+  </div>
+
+  <!-- HUD Control Panel -->
+  <div id="hud" class="hud-container">
+    <header class="hud-header">
+      <h1>Holiday Bells</h1>
+      <div class="sound-controls">
+        <button id="bg-sound-btn" class="icon-btn tooltip" data-tooltip="Toggle Ambient Woods Sound">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Song Progress Display -->
+    <div class="song-section">
+      <div class="section-title">
+        <span>We Wish You A Merry Christmas</span>
+        <span id="sequence-percent">0%</span>
+      </div>
+      <div class="progress-track-wrapper">
+        <div id="sequence-progress" class="sequence-progress-bar"></div>
+      </div>
+      
+      <!-- Scrolling Notes Queue -->
+      <div class="notes-queue-container">
+        <div id="notes-queue" class="notes-queue">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions / Footer Info -->
+    <div class="hud-instructions">
+      <p>💡 <strong>How to Play:</strong> Click or tap on the hanging bells to swing them and play their note. Follow the highlighted notes above in order!</p>
+      <div class="note-legend">
+        <span class="legend-item"><span class="bell-num">1</span> D6</span>
+        <span class="legend-item"><span class="bell-num">2</span> E6</span>
+        <span class="legend-item"><span class="bell-num">3</span> F#6</span>
+        <span class="legend-item"><span class="bell-num">4</span> G6</span>
+        <span class="legend-item"><span class="bell-num">5</span> A6</span>
+        <span class="legend-item"><span class="bell-num">6</span> B6</span>
+        <span class="legend-item"><span class="bell-num">7</span> C7</span>
+      </div>
+    </div>
+    
+    <div class="action-footer">
+      <button id="reset-song-btn" class="btn btn-secondary">Reset Song</button>
+    </div>
+  </div>
+
+  <!-- Congratulations Splash (Hidden by default) -->
+  <div id="congrats-splash" class="splash-card hidden">
+    <h2>🌟 Spectacular! 🌟</h2>
+    <p>You completed the song! The forest is celebrating and snow is falling.</p>
+    <button id="congrats-close-btn" class="btn">Keep Playing</button>
+  </div>
+
+  <script type="module" src="main.js?v=3"></script>
+</body>
+</html>
