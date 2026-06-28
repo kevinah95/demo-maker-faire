@@ -264,8 +264,8 @@ function loadAssets() {
                       // Check if bulb is lit up (posterized < uLightGlow)
                       float bulb_mask = step(posterized, uLightGlow);
                       
-                      // Check if fragment is part of the center sign board (x: [-0.6, 0.6], y > 1.78)
-                      float is_sign = step(-0.6, vWorldPosition.x) * step(vWorldPosition.x, 0.6) * step(1.78, vWorldPosition.y);
+                      // Check if fragment is part of the center sign board (x: [-0.6, 0.6], y > 2.38)
+                      float is_sign = step(-0.6, vWorldPosition.x) * step(vWorldPosition.x, 0.6) * step(2.38, vWorldPosition.y);
                       
                       // Bulbs obey sequential bulb_mask, while sign text obeys uSignFade
                       float mask = mix(bulb_mask, uSignFade, is_sign);
