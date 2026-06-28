@@ -226,6 +226,7 @@ function loadAssets() {
                 color: mat.color || new THREE.Color(0xffffff),
                 map: mat.map,
                 normalMap: mat.normalMap,
+                emissiveMap: mat.emissiveMap, // Copy the emissive map mask
                 emissive: mat.emissive ? new THREE.Color(mat.emissive) : new THREE.Color(0x000000),
                 emissiveIntensity: mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : 1.0,
                 shininess: 30
