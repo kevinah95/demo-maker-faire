@@ -701,12 +701,7 @@ function animate() {
     }
   });
 
-  // Diagnostic log for intensities (throttled to ~1% of frames)
-  if (arborGlowMaterials.length > 0 && Math.random() < 0.01) {
-    const lg = arborGlowMaterials[0].userData.lightGlow ? arborGlowMaterials[0].userData.lightGlow.value : 0.0;
-    const sf = arborGlowMaterials[0].userData.signFade ? arborGlowMaterials[0].userData.signFade.value : 0.0;
-    console.log(`Diagnostic - lightGlow: ${lg.toFixed(3)} / target: ${lightGlowVal.toFixed(3)}, signFade: ${sf.toFixed(3)} / target: ${signFadeVal.toFixed(3)}`);
-  }
+
 
   // 5. Render Scene
   renderer.render(scene, camera);
