@@ -39,7 +39,8 @@ let snowParticles;
 let sequenceProgress = 0; // Current note index in SONG_SEQUENCE
 let isSnowing = false;
 let snowIntensity = 0.0;
-let signGlowIntensity = 0.0;
+let lightGlowVal = 0.0;
+let signFadeVal = 0.0;
 
 // Audio variables
 let bgAudio;
@@ -220,31 +221,65 @@ function loadAssets() {
           
           if (child.material) {
             const materials = Array.isArray(child.material) ? child.material : [child.material];
-            const newMaterials = materials.map(mat => {
+            materials.forEach(mat => {
               const name = mat.name.toLowerCase();
-              const newMat = new THREE.MeshPhongMaterial({
-                color: mat.color || new THREE.Color(0xffffff),
-                map: mat.map,
-                normalMap: mat.normalMap,
-                emissiveMap: mat.emissiveMap, // Copy the emissive map mask
-                emissive: mat.emissive ? new THREE.Color(mat.emissive) : new THREE.Color(0x000000),
-                emissiveIntensity: mat.emissiveIntensity !== undefined ? mat.emissiveIntensity : 1.0,
-                shininess: 30
-              });
-              
               const isGlow = name.includes('glow') || name.includes('sign') || name.includes('light') || mat.emissiveMap || (mat.emissive && (mat.emissive.r > 0 || mat.emissive.g > 0 || mat.emissive.b > 0));
               if (isGlow) {
-                newMat.emissive.setHex(0xeab308); // Golden emission
-                newMat.emissiveIntensity = 0.0;
-                arborGlowMaterials.push(newMat);
+                // Initialize custom shader uniforms
+                mat.userData.lightGlow = { value: 0.0 };
+                mat.userData.signFade = { value: 0.0 };
+
+                // Set emissive color to white to preserve the multicolored Christmas lights.
+                mat.emissive.setHex(0xffffff);
+                mat.emissiveIntensity = 3.0; // Boost standard glow intensity
+                
+                // Inject custom vertex/fragment shader logic via onBeforeCompile
+                mat.onBeforeCompile = (shader) => {
+                  shader.uniforms.uLightGlow = mat.userData.lightGlow;
+                  shader.uniforms.uSignFade = mat.userData.signFade;
+                  
+                  // 1. Pass world position from vertex shader to fragment shader
+                  shader.vertexShader = 'varying vec3 vWorldPosition;\n' + shader.vertexShader;
+                  shader.vertexShader = shader.vertexShader.replace(
+                    '#include <project_vertex>',
+                    `#include <project_vertex>
+                     vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;`
+                  );
+                  
+                  // 2. Fragment shader: mask emissive radiance using world position x (bulb sequence) and sign area
+                  shader.fragmentShader = 'varying vec3 vWorldPosition;\nuniform float uLightGlow;\nuniform float uSignFade;\n' + shader.fragmentShader;
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <emissivemap_fragment>',
+                    `#ifdef USE_EMISSIVEMAP
+                      vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
+                      
+                      // Remap world position x from [2.2, -2.2] to [0.0, 1.0] (matching Babylon sourceRange)
+                      float remapped = clamp((2.2 - vWorldPosition.x) / 4.4, 0.0, 1.0);
+                      
+                      // Posterize into 29 discrete steps (matching Babylon steps count)
+                      float posterized = floor(remapped * 29.0) / 29.0;
+                      
+                      // Check if bulb is lit up (posterized < uLightGlow)
+                      float bulb_mask = step(posterized, uLightGlow);
+                      
+                      // Check if fragment is part of the center sign board (x: [-0.6, 0.6], y > 1.78)
+                      float is_sign = step(-0.6, vWorldPosition.x) * step(vWorldPosition.x, 0.6) * step(1.78, vWorldPosition.y);
+                      
+                      // Bulbs obey sequential bulb_mask, while sign text obeys uSignFade
+                      float mask = mix(bulb_mask, uSignFade, is_sign);
+                      
+                      totalEmissiveRadiance *= emissiveColor.rgb * mask;
+                    #endif`
+                  );
+                };
+                
+                arborGlowMaterials.push(mat);
               } else {
-                newMat.emissive.setHex(0x000000);
-                newMat.emissiveIntensity = 0.0;
+                // Lock non-glow materials to black emission
+                if (mat.emissive) mat.emissive.setHex(0x000000);
+                mat.emissiveIntensity = 0.0;
               }
-              return newMat;
             });
-            
-            child.material = Array.isArray(child.material) ? newMaterials : newMaterials[0];
           }
         }
       });
@@ -521,8 +556,8 @@ function checkSequence(struckIndex) {
     // Advance progress
     sequenceProgress++;
     
-    // Smoothly blend in sign illumination
-    signGlowIntensity = (sequenceProgress / SONG_SEQUENCE.length) * 2.0;
+    // Update lightGlow target to sequential progress (0 to 1)
+    lightGlowVal = sequenceProgress / SONG_SEQUENCE.length;
 
     // Check if song completed
     if (sequenceProgress === SONG_SEQUENCE.length) {
@@ -538,9 +573,10 @@ function checkSequence(struckIndex) {
       }, 400);
     }
     
-    // Reset progress
+    // Reset progress and turn off lights
     sequenceProgress = 0;
-    signGlowIntensity = 0.0;
+    lightGlowVal = 0.0;
+    signFadeVal = 0.0;
     
     // Turn off snow if they fail during celebratory states
     if (isSnowing) {
@@ -553,7 +589,8 @@ function checkSequence(struckIndex) {
 
 function triggerCelebration() {
   isSnowing = true;
-  signGlowIntensity = 3.0; // Super bright glow
+  lightGlowVal = 1.0;
+  signFadeVal = 1.0; // Fade in sign text "Happy Holidays"
   
   // Show congrats card
   congratsSplash.classList.remove('hidden');
@@ -575,7 +612,8 @@ function triggerCelebration() {
 
 function resetSongProgress() {
   sequenceProgress = 0;
-  signGlowIntensity = 0.0;
+  lightGlowVal = 0.0;
+  signFadeVal = 0.0;
   isSnowing = false;
   updateNotesQueueUI();
   congratsSplash.classList.add('hidden');
@@ -628,11 +666,22 @@ function animate() {
   // 3. Snow rendering
   updateSnow(dt);
 
-  // 4. Smoothly interpolate materials glow intensity
+  // 4. Smoothly interpolate materials glow intensity uniforms
   arborGlowMaterials.forEach(mat => {
-    // Fade emissiveIntensity towards the target signGlowIntensity value
-    mat.emissiveIntensity += (signGlowIntensity - mat.emissiveIntensity) * 4.0 * dt;
+    if (mat.userData.lightGlow) {
+      mat.userData.lightGlow.value += (lightGlowVal - mat.userData.lightGlow.value) * 4.0 * dt;
+    }
+    if (mat.userData.signFade) {
+      mat.userData.signFade.value += (signFadeVal - mat.userData.signFade.value) * 4.0 * dt;
+    }
   });
+
+  // Diagnostic log for intensities (throttled to ~1% of frames)
+  if (arborGlowMaterials.length > 0 && Math.random() < 0.01) {
+    const lg = arborGlowMaterials[0].userData.lightGlow ? arborGlowMaterials[0].userData.lightGlow.value : 0.0;
+    const sf = arborGlowMaterials[0].userData.signFade ? arborGlowMaterials[0].userData.signFade.value : 0.0;
+    console.log(`Diagnostic - lightGlow: ${lg.toFixed(3)} / target: ${lightGlowVal.toFixed(3)}, signFade: ${sf.toFixed(3)} / target: ${signFadeVal.toFixed(3)}`);
+  }
 
   // 5. Render Scene
   renderer.render(scene, camera);
