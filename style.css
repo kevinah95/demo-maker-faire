@@ -429,6 +429,50 @@ body {
   margin-bottom: 24px;
 }
 
+/* Difficulty Selector */
+.difficulty-selector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  padding: 2px;
+  gap: 2px;
+}
+
+.diff-btn {
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.diff-btn:hover {
+  color: var(--text-main);
+}
+
+.diff-btn.active {
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--blue-glow);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+/* Hidden difficulty helper */
+.notes-queue-container.difficulty-hidden {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, height 0.3s ease;
+}
+
 /* Responsiveness */
 @media (max-width: 768px) {
   /* Move HUD panel to the top on mobile so the bottom 3D view is completely clear and touchable */

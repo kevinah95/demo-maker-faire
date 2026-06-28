@@ -43,7 +43,13 @@
   <div id="hud" class="hud-container">
     <header class="hud-header">
       <h1>Campanas Navideñas</h1>
-      <div class="sound-controls">
+      <div class="hud-controls" style="display: flex; align-items: center; gap: 10px;">
+        <!-- Difficulty Selector -->
+        <div class="difficulty-selector">
+          <button id="easy-mode-btn" class="diff-btn active">Fácil</button>
+          <button id="hard-mode-btn" class="diff-btn">Difícil</button>
+        </div>
+        
         <button id="bg-sound-btn" class="icon-btn tooltip" data-tooltip="Activar/Desactivar sonido ambiental del bosque">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>

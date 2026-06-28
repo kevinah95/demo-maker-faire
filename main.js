@@ -41,6 +41,7 @@ let isSnowing = false;
 let snowIntensity = 0.0;
 let lightGlowVal = 0.0;
 let signFadeVal = 0.0;
+let currentDifficulty = 'easy'; // 'easy' or 'hard'
 
 // Audio variables
 let bgAudio;
@@ -59,6 +60,9 @@ const notesQueue = document.getElementById('notes-queue');
 const resetBtn = document.getElementById('reset-song-btn');
 const congratsSplash = document.getElementById('congrats-splash');
 const congratsCloseBtn = document.getElementById('congrats-close-btn');
+const easyModeBtn = document.getElementById('easy-mode-btn');
+const hardModeBtn = document.getElementById('hard-mode-btn');
+const notesQueueContainer = document.querySelector('.notes-queue-container');
 
 // --- INITIALIZE THREE.JS SCENE ---
 function init() {
@@ -134,6 +138,25 @@ function init() {
   resetBtn.addEventListener('click', resetSongProgress);
   congratsCloseBtn.addEventListener('click', () => {
     congratsSplash.classList.add('hidden');
+  });
+
+  // Difficulty Toggle Listeners
+  easyModeBtn.addEventListener('click', () => {
+    if (currentDifficulty === 'easy') return;
+    currentDifficulty = 'easy';
+    easyModeBtn.classList.add('active');
+    hardModeBtn.classList.remove('active');
+    notesQueueContainer.classList.remove('difficulty-hidden');
+    resetSongProgress();
+  });
+
+  hardModeBtn.addEventListener('click', () => {
+    if (currentDifficulty === 'hard') return;
+    currentDifficulty = 'hard';
+    hardModeBtn.classList.add('active');
+    easyModeBtn.classList.remove('active');
+    notesQueueContainer.classList.add('difficulty-hidden');
+    resetSongProgress();
   });
 
   // Start loop
