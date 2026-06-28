@@ -43,6 +43,18 @@ let lightGlowVal = 0.0;
 let signFadeVal = 0.0;
 let currentDifficulty = 'easy'; // 'easy' or 'hard'
 
+// Recording / Playback State
+let recordedSequence = [];
+let recordingStartTime = null;
+let isPlayingPlayback = false;
+let playbackTimeoutIds = [];
+
+const PERFECT_RHYTHM_TIMINGS = [
+  0, 500, 1000, 1250, 1500, 1750, 2000, 2500, 3000, 3500, 
+  4000, 4250, 4500, 4750, 5000, 5500, 6000, 6500, 7000, 7250, 
+  7500, 7750, 8000, 8500, 9000, 9250, 9500, 10000, 10500, 11000
+];
+
 // Audio variables
 let bgAudio;
 let bellAudios = [];
@@ -63,6 +75,12 @@ const congratsCloseBtn = document.getElementById('congrats-close-btn');
 const easyModeBtn = document.getElementById('easy-mode-btn');
 const hardModeBtn = document.getElementById('hard-mode-btn');
 const notesQueueContainer = document.querySelector('.notes-queue-container');
+
+// Playback elements
+const playbackOverlay = document.getElementById('playback-overlay');
+const stopPlaybackBtn = document.getElementById('stop-playback-btn');
+const playMyRecordingBtn = document.getElementById('play-my-recording-btn');
+const playPerfectBtn = document.getElementById('play-perfect-btn');
 
 // --- INITIALIZE THREE.JS SCENE ---
 function init() {
@@ -157,6 +175,25 @@ function init() {
     easyModeBtn.classList.remove('active');
     notesQueueContainer.classList.add('difficulty-hidden');
     resetSongProgress();
+  });
+
+  // Playback Control Listeners
+  stopPlaybackBtn.addEventListener('click', () => {
+    stopPlayback();
+  });
+
+  playMyRecordingBtn.addEventListener('click', () => {
+    startPlayback(recordedSequence);
+  });
+
+  playPerfectBtn.addEventListener('click', () => {
+    const perfectSequence = SONG_SEQUENCE.map((bellIdx, i) => {
+      return {
+        bellIndex: bellIdx,
+        time: PERFECT_RHYTHM_TIMINGS[i]
+      };
+    });
+    startPlayback(perfectSequence);
   });
 
   // Start loop
@@ -485,8 +522,8 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 function onPointerDown(e) {
-  // Only register pointer interaction when loader is gone
-  if (loaderOverlay.style.display !== 'none') return;
+  // Only register pointer interaction when loader is gone and not playing back
+  if (loaderOverlay.style.display !== 'none' || isPlayingPlayback) return;
 
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -578,6 +615,17 @@ function checkSequence(struckIndex) {
   const expectedIndex = SONG_SEQUENCE[sequenceProgress];
   
   if (struckIndex === expectedIndex) {
+    // Record correct note hits (unless we are replaying/autoplaying!)
+    if (!isPlayingPlayback) {
+      if (recordingStartTime === null) {
+        recordingStartTime = performance.now();
+      }
+      recordedSequence.push({
+        bellIndex: struckIndex,
+        time: performance.now() - recordingStartTime
+      });
+    }
+
     // Advance progress
     sequenceProgress++;
     
@@ -603,6 +651,12 @@ function checkSequence(struckIndex) {
     lightGlowVal = 0.0;
     signFadeVal = 0.0;
     
+    // Reset recording only if we're not currently doing a playback replay
+    if (!isPlayingPlayback) {
+      recordedSequence = [];
+      recordingStartTime = null;
+    }
+    
     // Turn off snow if they fail during celebratory states
     if (isSnowing) {
       isSnowing = false;
@@ -617,8 +671,17 @@ function triggerCelebration() {
   lightGlowVal = 1.0;
   signFadeVal = 1.0; // Fade in sign text "Happy Holidays"
   
-  // Show congrats card
-  congratsSplash.classList.remove('hidden');
+  // Show congrats card (unless we are in autoplay/replay, which has its own timer to show it at the end)
+  if (!isPlayingPlayback) {
+    congratsSplash.classList.remove('hidden');
+    
+    // Display my recording button only if the player actually recorded something (did not just watch autoplay)
+    if (recordedSequence.length > 0) {
+      playMyRecordingBtn.style.display = 'block';
+    } else {
+      playMyRecordingBtn.style.display = 'none';
+    }
+  }
   
   // Confetti effect: swing all bells in unison!
   bellPivots.forEach((pivot, idx) => {
@@ -628,11 +691,6 @@ function triggerCelebration() {
       bellAudios[idx].play().catch(e => {});
     }, idx * 120);
   });
-
-  // Re-loop/clear congrats automatically after some time
-  setTimeout(() => {
-    congratsSplash.classList.add('hidden');
-  }, 6000);
 }
 
 function resetSongProgress() {
@@ -640,8 +698,70 @@ function resetSongProgress() {
   lightGlowVal = 0.0;
   signFadeVal = 0.0;
   isSnowing = false;
+  
+  // Reset recording state only if we're not currently doing a playback replay
+  if (!isPlayingPlayback) {
+    recordedSequence = [];
+    recordingStartTime = null;
+  }
+  
   updateNotesQueueUI();
   congratsSplash.classList.add('hidden');
+}
+
+// --- AUTOMATIC REPLAY / AUTOPLAY ENGINE ---
+function startPlayback(sequence) {
+  if (sequence.length === 0) return;
+  
+  // Clear any active timeouts first
+  stopPlayback();
+  
+  isPlayingPlayback = true;
+  playbackOverlay.style.display = 'block';
+  congratsSplash.classList.add('hidden');
+  
+  // Reset sequence progress silently (preserving recording)
+  sequenceProgress = 0;
+  lightGlowVal = 0.0;
+  signFadeVal = 0.0;
+  isSnowing = false;
+  updateNotesQueueUI();
+  
+  // Schedule bell strikes along the sequence's timestamps
+  sequence.forEach(event => {
+    const tId = setTimeout(() => {
+      triggerBell(event.bellIndex);
+    }, event.time);
+    playbackTimeoutIds.push(tId);
+  });
+  
+  // Schedule completion (1.5 seconds after last note strikes)
+  const lastEventTime = sequence[sequence.length - 1].time;
+  const tEndId = setTimeout(() => {
+    stopPlayback(true);
+  }, lastEventTime + 1500);
+  playbackTimeoutIds.push(tEndId);
+}
+
+function stopPlayback(completed = false) {
+  // Clear all pending timeouts
+  playbackTimeoutIds.forEach(id => clearTimeout(id));
+  playbackTimeoutIds = [];
+  
+  isPlayingPlayback = false;
+  playbackOverlay.style.display = 'none';
+  
+  if (completed) {
+    congratsSplash.classList.remove('hidden');
+    // Hide 'Escuchar mi grabación' since it was autoplay or already listened to
+    if (recordedSequence.length > 0) {
+      playMyRecordingBtn.style.display = 'block';
+    } else {
+      playMyRecordingBtn.style.display = 'none';
+    }
+  } else {
+    resetSongProgress();
+  }
 }
 
 // --- AUDIO PLAYBACK ---
