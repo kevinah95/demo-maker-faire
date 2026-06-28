@@ -70,6 +70,7 @@ function init() {
   // 2. Camera setup
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 2.5, 4.5);
+  adjustCameraForAspect();
 
   // 3. Renderer setup
   const canvas = document.getElementById('webgl-canvas');
@@ -644,9 +645,27 @@ function toggleBgAudio() {
   }
 }
 
+// --- DYNAMIC CAMERA ASPECT RATIO CORRECTION ---
+function adjustCameraForAspect() {
+  if (!camera) return;
+  const aspect = window.innerWidth / window.innerHeight;
+  // We want the horizontal half-width to be at least 2.6 units (including safety margin)
+  const targetHalfWidth = 2.6;
+  const fovRad = (camera.fov * Math.PI) / 180;
+  const tanHalfFov = Math.tan(fovRad / 2);
+  
+  // Calculate required z distance to fit the horizontal width
+  let requiredZ = targetHalfWidth / (tanHalfFov * aspect);
+  camera.position.z = Math.max(4.5, requiredZ);
+  
+  // Adjust y position slightly to keep the arch centered nicely as we zoom out
+  camera.position.y = 2.5 + (camera.position.z - 4.5) * 0.15;
+}
+
 // --- WINDOW RESIZE ---
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
+  adjustCameraForAspect();
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
