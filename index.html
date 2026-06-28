@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Holiday Bells 3D — Play & Swing</title>
-  <meta name="description" content="An interactive 3D holiday bells simulator built with Three.js. Play 'We Wish You A Merry Christmas' and watch the winter wonder unfold.">
+  <title>Campanas Navideñas 3D — Juega y Hazlas Sonar</title>
+  <meta name="description" content="Un simulador interactivo de campanas navideñas en 3D construido con Three.js. Toca '¡Feliz Navidad a todos!' y mira cómo se despliega la magia invernal.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -29,22 +29,22 @@
   <!-- Loader Overlay -->
   <div id="loader-overlay" class="overlay">
     <div class="loader-card">
-      <div class="loader-title">Holiday Bells 3D</div>
-      <div class="loader-subtitle">Loading winter magic...</div>
+      <div class="loader-title">Campanas Navideñas 3D</div>
+      <div class="loader-subtitle">Cargando magia invernal...</div>
       <div class="progress-bar-container">
         <div id="progress-bar" class="progress-bar"></div>
       </div>
-      <div id="loader-status" class="loader-status">Initializing scene...</div>
-      <button id="start-btn" class="btn" style="display: none;">Enter Experience</button>
+      <div id="loader-status" class="loader-status">Inicializando escena...</div>
+      <button id="start-btn" class="btn" style="display: none;">Comenzar Experiencia</button>
     </div>
   </div>
 
   <!-- HUD Control Panel -->
   <div id="hud" class="hud-container">
     <header class="hud-header">
-      <h1>Holiday Bells</h1>
+      <h1>Campanas Navideñas</h1>
       <div class="sound-controls">
-        <button id="bg-sound-btn" class="icon-btn tooltip" data-tooltip="Toggle Ambient Woods Sound">
+        <button id="bg-sound-btn" class="icon-btn tooltip" data-tooltip="Activar/Desactivar sonido ambiental del bosque">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
           </svg>
@@ -55,7 +55,7 @@
     <!-- Song Progress Display -->
     <div class="song-section">
       <div class="section-title">
-        <span>We Wish You A Merry Christmas</span>
+        <span>¡Feliz Navidad a todos!</span>
         <span id="sequence-percent">0%</span>
       </div>
       <div class="progress-track-wrapper">
@@ -72,28 +72,28 @@
 
     <!-- Instructions / Footer Info -->
     <div class="hud-instructions">
-      <p>💡 <strong>How to Play:</strong> Click or tap on the hanging bells to swing them and play their note. Follow the highlighted notes above in order!</p>
+      <p>💡 <strong>Cómo jugar:</strong> Haz clic o toca las campanas colgantes para hacerlas oscilar y tocar sus notas. ¡Sigue las notas resaltadas arriba en orden!</p>
       <div class="note-legend">
-        <span class="legend-item"><span class="bell-num">1</span> D6</span>
-        <span class="legend-item"><span class="bell-num">2</span> E6</span>
-        <span class="legend-item"><span class="bell-num">3</span> F#6</span>
-        <span class="legend-item"><span class="bell-num">4</span> G6</span>
-        <span class="legend-item"><span class="bell-num">5</span> A6</span>
-        <span class="legend-item"><span class="bell-num">6</span> B6</span>
-        <span class="legend-item"><span class="bell-num">7</span> C7</span>
+        <span class="legend-item"><span class="bell-num">1</span> RE6</span>
+        <span class="legend-item"><span class="bell-num">2</span> MI6</span>
+        <span class="legend-item"><span class="bell-num">3</span> FA#6</span>
+        <span class="legend-item"><span class="bell-num">4</span> SOL6</span>
+        <span class="legend-item"><span class="bell-num">5</span> LA6</span>
+        <span class="legend-item"><span class="bell-num">6</span> SI6</span>
+        <span class="legend-item"><span class="bell-num">7</span> DO7</span>
       </div>
     </div>
     
     <div class="action-footer">
-      <button id="reset-song-btn" class="btn btn-secondary">Reset Song</button>
+      <button id="reset-song-btn" class="btn btn-secondary">Reiniciar Canción</button>
     </div>
   </div>
 
   <!-- Congratulations Splash (Hidden by default) -->
   <div id="congrats-splash" class="splash-card hidden">
-    <h2>🌟 Spectacular! 🌟</h2>
-    <p>You completed the song! The forest is celebrating and snow is falling.</p>
-    <button id="congrats-close-btn" class="btn">Keep Playing</button>
+    <h2>🌟 ¡Espectacular! 🌟</h2>
+    <p>¡Completaste la canción! El bosque está de fiesta y comienza a nevar.</p>
+    <button id="congrats-close-btn" class="btn">Seguir Jugando</button>
   </div>
 
   <script type="module" src="main.js?v=3"></script>

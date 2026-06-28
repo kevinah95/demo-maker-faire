@@ -150,11 +150,11 @@ function loadAssets() {
     
     // Clean up filename for cleaner UI display
     const filename = url.split('/').pop().split('?')[0];
-    loaderStatus.textContent = `Loading ${filename}... (${Math.round(progress)}%)`;
+    loaderStatus.textContent = `Cargando ${filename}... (${Math.round(progress)}%)`;
   };
 
   loadingManager.onLoad = () => {
-    loaderStatus.textContent = 'All assets loaded successfully!';
+    loaderStatus.textContent = '¡Todos los recursos se cargaron con éxito!';
     progressBar.style.width = '100%';
     // Reveal enter button
     startBtn.style.display = 'inline-block';
@@ -172,7 +172,7 @@ function loadAssets() {
   };
 
   loadingManager.onError = (url) => {
-    loaderStatus.textContent = `Error loading: ${url}. Retrying...`;
+    loaderStatus.textContent = `Error al cargar: ${url}. Reintentando...`;
     console.error('Error loading asset:', url);
   };
 
