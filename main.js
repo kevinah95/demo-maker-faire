@@ -89,6 +89,7 @@ function init() {
   controls.minDistance = 1.5;
   controls.maxDistance = 15;
   controls.target.set(0, 1.5, 0);
+  controls.update();
 
   // 5. Light setup
   const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.4);
@@ -660,6 +661,11 @@ function adjustCameraForAspect() {
   
   // Adjust y position slightly to keep the arch centered nicely as we zoom out
   camera.position.y = 2.5 + (camera.position.z - 4.5) * 0.15;
+
+  // Force OrbitControls to sync its internal target/radius with the new camera position!
+  if (typeof controls !== 'undefined' && controls) {
+    controls.update();
+  }
 }
 
 // --- WINDOW RESIZE ---
